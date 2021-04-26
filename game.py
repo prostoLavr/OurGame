@@ -45,12 +45,16 @@ def server():
 
 # TODO класс игрока, чтобы сделать часть клиента
 class Player(pygame.sprite.Sprite):
-    def __init__(self, color, coord=(0, 0)):
+    def __init__(self, number, color, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
         self.coord = coord
+        self.create_sprite(number, color)
 
-    def create_sprite(self):
-        pass
+    def create_sprite(self, number, color):
+        self.image = pygame.image.load(CircleMaker.make(color, number)).convert()
+        self.image.set_colorkey(BACKGROUND_COLOR)
+        self.rect = self.image.get_rect()
+        self.rect.center = (WIDTH / 2, HEIGHT / 2)
 
     def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
         pass
@@ -77,7 +81,11 @@ class Game:
         pygame.display.set_caption("My Game")
         self.clock = pygame.time.Clock()
         self.sprites = pygame.sprite.Group()
+        self.init_circle()
         self.game_loop()
+
+    def init_circle(self):
+        self.sprites.add(Player(1, GREEN))
 
     # Обработка событий
     def game_loop(self):
@@ -96,6 +104,5 @@ class Game:
 
 
 def main():
-    CircleMaker.make(RED)
     game = Game()
     pygame.quit()
