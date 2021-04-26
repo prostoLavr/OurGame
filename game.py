@@ -180,4 +180,4 @@ class Game:
 
 def main():
     game = Game()
-    pygame.quit()
+    # pygame.quit()
