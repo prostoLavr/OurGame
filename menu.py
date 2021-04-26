@@ -1,24 +1,35 @@
 import pygame_menu
 import pygame
 import game
+import json
 
 
-def set_difficulty(value, difficulty):
-    # TODO: нужно прописать уровни сложности
-    pass
+DEFAULT = [2, 'write name']
 
 
-def start_the_game():
-    game.main()
+class Menu:
+    def set_difficulty(self, value, difficulty):
+        self.difficulty = difficulty
 
+    def start_game(self):
+        v = self.text_input.get_value()
+        with open('save.json', 'w') as file:
+            json.dump((self.difficulty, v), file)
+        game.main(v, self.difficulty)
 
-def create_menu(name, width, heigh):
-    surface = pygame.display.set_mode((750, 500))
-    menu = pygame_menu.Menu(name, width, heigh,
-                            theme=pygame_menu.themes.THEME_BLUE)
-
-    menu.add.text_input('Name :', default='write name')
-    menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
-    menu.add.button('Play', start_the_game)
-    menu.add.button('Quit', pygame_menu.events.EXIT)
-    menu.mainloop(surface)
+    def __init__(self, name, width, height):
+        try:
+            with open('save.json', 'r') as file:
+                self.difficulty, txt_value = json.load(file)
+        except FileNotFoundError:
+            print('File not found!')
+            self.difficulty, txt_value = DEFAULT
+        surface = pygame.display.set_mode((750, 500))
+        menu = pygame_menu.Menu(name, width, height,
+                                theme=pygame_menu.themes.THEME_BLUE)
+        self.text_input = menu.add.text_input('Name: ', default=txt_value)
+        menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], default=self.difficulty - 1,
+                          onchange=self.set_difficulty)
+        menu.add.button('Play', self.start_game)
+        menu.add.button('Quit', pygame_menu.events.EXIT)
+        menu.mainloop(surface)

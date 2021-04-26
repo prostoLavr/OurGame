@@ -176,5 +176,5 @@ class Game:
             self.clock.tick(FPS)
 
 
-def main():
+def main(name, difficulty):
     game = Game()
