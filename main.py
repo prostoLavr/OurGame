@@ -1,8 +1,6 @@
-import pygame
-
-
 def main():
     print('Hi!')
+    # TODO: Запуск меню
 
 
 if __name__ == '__main__':
