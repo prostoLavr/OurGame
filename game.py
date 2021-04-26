@@ -24,9 +24,6 @@ LEFT = 3
 
 BACKGROUND_COLOR = (204, 51, 51)
 
-OPEN_SAVE = False
-FILE_SAVE = 'save.txt'
-
 # Пока что все будет локально, ибо серверов у нас нет.
 addr = ('127.0.0.1', 9090)
 
@@ -96,8 +93,6 @@ class Game:
             self.sprites.draw(self.screen)
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    with open(FILE_SAVE, 'wb') as file:
-                        pass
                     running = False
             pygame.display.flip()
             self.clock.tick(FPS)
