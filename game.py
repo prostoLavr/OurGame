@@ -1,10 +1,15 @@
 import pygame
 import socket
 import threading
+import os
+from PIL import Image, ImageDraw
+
 
 WIDTH = 750
 HEIGHT = 500
 FPS = 30
+
+PLAYER_SIZE = (50,) * 2
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -40,12 +45,29 @@ def server():
 
 # TODO класс игрока, чтобы сделать часть клиента
 class Player(pygame.sprite.Sprite):
-    def __init__(self, coord=(0, 0)):
+    def __init__(self, color, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
         self.coord = coord
 
+    def create_sprite(self):
+        pass
+
     def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
         pass
+
+
+class CircleMaker:
+    @staticmethod
+    def make(color, player_number: int):
+        img = Image.new('RGB', PLAYER_SIZE, color=BACKGROUND_COLOR)
+        drawer = ImageDraw.Draw(img)
+        drawer.ellipse((0, 0, *PLAYER_SIZE), fill=color)
+        if not os.path.isdir("res"):
+            os.mkdir("res")
+        if not os.path.isdir("res/images"):
+            os.mkdir("res/images")
+        img.save(f'res/images/circle{player_number}.png')
+        return f'res/images/circle{player_number}.png'
 
 
 class Game:
@@ -74,5 +96,6 @@ class Game:
 
 
 def main():
+    CircleMaker.make(RED)
     game = Game()
     pygame.quit()
