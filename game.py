@@ -75,7 +75,7 @@ def server():
         threading.Thread(target=client, args=(sock, addr, player)).start()
 
 
-# TODO класс игрока, чтобы сделать часть клиента
+
 class Player(pygame.sprite.Sprite):
     def __init__(self, number, color, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
@@ -128,7 +128,7 @@ class CircleMaker:
 
 class Game:
     def __init__(self):
-        pygame.init()
+        # pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("My Game")
         self.clock = pygame.time.Clock()
@@ -140,14 +140,12 @@ class Game:
         self.me = MyPlayer(1, GREEN)
         self.sprites.add(self.me)
 
-    # Обработка событий
     def game_loop(self):
         running = True
         left_flag = False
         right_flag = False
         forward_flag = False
         backward_flag = False
-        # При запуске игры создается класс первого игрока
         while running:
             self.sprites.update()
             self.screen.fill(WHITE)
@@ -180,4 +178,3 @@ class Game:
 
 def main():
     game = Game()
-    # pygame.quit()

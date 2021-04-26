@@ -1,23 +1,21 @@
-# TODO: меню и запуск game.py
 import pygame_menu
 import pygame
 import game
 
 
 def set_difficulty(value, difficulty):
-    # нужно прописать уровни сложности
+    # TODO: нужно прописать уровни сложности
     pass
 
 
 def start_the_game():
-    # запуск игры
     game.main()
 
 
 def create_menu(name, width, heigh):
     surface = pygame.display.set_mode((750, 500))
     menu = pygame_menu.Menu(name, width, heigh,
-                           theme=pygame_menu.themes.THEME_BLUE)
+                            theme=pygame_menu.themes.THEME_BLUE)
 
     menu.add.text_input('Name :', default='write name')
     menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
