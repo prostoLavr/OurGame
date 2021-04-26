@@ -50,15 +50,12 @@ class Player(pygame.sprite.Sprite):
 
 class Game:
     def __init__(self):
-        self.init_game()
-        self.game_loop()
-
-    def init_game(self):
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("My Game")
         self.clock = pygame.time.Clock()
         self.sprites = pygame.sprite.Group()
+        self.game_loop()
 
     # Обработка событий
     def game_loop(self):
