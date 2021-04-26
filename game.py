@@ -39,6 +39,13 @@ def server():
 
 
 # TODO класс игрока, чтобы сделать часть клиента
+class Player(pygame.sprite.Sprite):
+    def __init__(self, coord=(0, 0)):
+        pygame.sprite.Sprite.__init__(self)
+        self.coord = coord
+
+    def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
+        pass
 
 
 class Game:
