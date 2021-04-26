@@ -77,7 +77,7 @@ def server():
 
 # TODO класс игрока, чтобы сделать часть клиента
 class Player(pygame.sprite.Sprite):
-    def __init__(self, number, color, coord=[0, 0]):
+    def __init__(self, number, color, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
         self.coord = list(coord)
         self.id, self.socket = (), None  # Нужно для сервера
@@ -97,13 +97,13 @@ class Player(pygame.sprite.Sprite):
 
 class MyPlayer(Player):
     def move(self, forward_flag, backward_flag, right_flag, left_flag):
-        if forward_flag:
+        if forward_flag and self.rect.bottom < HEIGHT:
             self.coord[1] += PLAYER_SPEED
-        if backward_flag:
+        if backward_flag and self.rect.top > 0:
             self.coord[1] -= PLAYER_SPEED
-        if right_flag:
+        if right_flag and self.rect.right < WIDTH:
             self.coord[0] += PLAYER_SPEED
-        if left_flag:
+        if left_flag and self.rect.left > 0:
             self.coord[0] -= PLAYER_SPEED
 
     def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
