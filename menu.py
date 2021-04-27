@@ -12,18 +12,26 @@ class Menu:
         self.difficulty = difficulty
 
     def start_game(self):
+        # сохраняем в файл введенные уровень слож и имя игрока
+        # нужно чтоб после выхода из прораммы сохранялось то что ты ввел
+        # запускаем main в game
         v = self.text_input.get_value()
         with open('save.json', 'w') as file:
             json.dump((self.difficulty, v), file)
         game.main(v, self.difficulty)
 
     def __init__(self, name, width, height):
+        # пытаемся окрыть файл
+        # если получается достаем от туда уровень слож и имя игрока
+        # если нет то устонавливаем стандартные
         try:
             with open('save.json', 'r') as file:
                 self.difficulty, txt_value = json.load(file)
         except FileNotFoundError:
             print('File not found!')
             self.difficulty, txt_value = DEFAULT
+        # создаем меню
+        # при нажатии кнопки старт вызываем start_game
         surface = pygame.display.set_mode((750, 500))
         menu = pygame_menu.Menu(name, width, height,
                                 theme=pygame_menu.themes.THEME_BLUE)

@@ -119,6 +119,7 @@ class MyPlayer(Player):
 
 
 def random_cords():
+    # выдает случайные кординаты в пределах экрана
     s_x = ORD_SIZE[0] // 2
     s_y = ORD_SIZE[1] // 2
     x = randint(s_x, WIDTH - s_x)
@@ -141,6 +142,7 @@ class Ore(pygame.sprite.Sprite):
         self.rect.center = (WIDTH / 2, HEIGHT / 2)
 
     def mined(self):
+        # когда выкопали вызывается эта функция
         self.coord = list(random_cords())
         self.rect.x = self.coord[0]
         self.rect.y = self.coord[1]
@@ -152,6 +154,8 @@ class Ore(pygame.sprite.Sprite):
 class OreMaker:
     @staticmethod
     def make(kind: str):
+        # если нет папки images создаем
+        # запихиваем туда картинку 'название руды.png'
         if not os.path.isdir("res"):
             os.mkdir("res")
         if not os.path.isdir("res/images"):
@@ -210,6 +214,7 @@ class Game:
             self.sprites.update()
             self.screen.fill(WHITE)
             self.sprites.draw(self.screen)
+            # ходьба
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
