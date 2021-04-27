@@ -2,6 +2,7 @@ import pygame_menu
 import pygame
 import game
 import json
+import threading
 
 
 DEFAULT = [2, 'write name']
@@ -19,6 +20,9 @@ class Menu:
         with open('save.json', 'w') as file:
             json.dump((self.difficulty, v), file)
         game.main(v, self.difficulty)
+
+    def start_server(self):
+        threading.Thread(target=game.server).start()
 
     def __init__(self, name, width, height):
         # пытаемся окрыть файл
@@ -39,5 +43,7 @@ class Menu:
         menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], default=self.difficulty - 1,
                           onchange=self.set_difficulty)
         menu.add.button('Play', self.start_game)
+        menu.add.button('Start server', self.start_server)
+        menu.add.button('Connect to server', threading.Thread(target=game.client_connect).start)
         menu.add.button('Quit', pygame_menu.events.EXIT)
         menu.mainloop(surface)

@@ -33,7 +33,9 @@ BACKGROUND_COLOR = (204, 51, 51)
 ORD_COLOR = {"diamond": BLUE, "gold": YELLOW}
 
 # Пока что все будет локально, ибо серверов у нас нет.
-addr = ('127.0.0.1', 9090)
+addr = ('127.0.0.1', 9092)
+is_host = False
+server_events = []
 players = []
 ores = []
 
@@ -43,42 +45,77 @@ def client(sock, addr, player):
     """Получение и обработка событий"""
     while True:
         data = sock.recv(1024)
-        # data - (event_type: str, changes, player_class)
-        event_type, changes, player_class = pickle.loads(data)
+
+        if not data:
+            break
+        # data - (event_type: str, changes, player_id)
+        try:
+            event_type, changes, player_id = pickle.loads(data)
+        except ValueError:
+            event_type, changes = pickle.loads(data)
+            player_id = None
 
         if event_type == 'move':
-            player_class.coord = changes
+            if is_host:
+                player.coord = changes
+            else:
+                Player.get_player(player_id).coord = changes
+        elif event_type == 'new_player':
+            players.append(changes)
+        elif event_type == 'init':
+            for id, coord in changes:
+                Player(len(players) + 1, 'red')
+                players[-1].id = id
+                players[-1].coord = coord
+                server_events.append(('new_player', players[-1]))
+    sock.close()
 
 
 def client_connect():
     """Для подключения к серверу"""
-    global sock, players
+    global sock, players, is_host
+    is_host = False
     sock = socket.socket()
-    sock.connect(('127.0.0.1', 9090))
+    sock.connect(addr)
+    if len(players) == 0:
+        Player(0, 'green')
     players[0].socket = sock
     players[0].id = 0
     client(sock, 0, players[0])
 
 
 def server_sender(data: tuple):
-    global server_socket
-    """Отправка событий на другие подключения.
+    global server_socket, sock
+    """Отправка событий на другие подключения или на сервер.
     В data должно быть event_type и changes"""
+    if not is_host:
+        sock.send(pickle.dumps(data))
     for p in players:
-        server_socket.send_to(pickle.dumps(data), p.id)
+        if p.socket is None:
+            continue
+        p.socket.send(pickle.dumps(data))
 
 
 def server():
-    global addr, server_socket
-    server_socket = socket.create_server(addr)
+    global addr, server_socket, is_host, server_events
+    is_host = True
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind(addr)
     server_socket.listen(4)
-    for sock, addr in server_socket.accept():
+    print("server started at", addr)
+    while True:
+        sock, addr = server_socket.accept()
         # Прием подключений к серверу
         print("Accept connection from", addr)
-        player = Player()
+        player = Player(len(players), 'red')
         player.socket = sock
         player.id = addr
+        server_events.append(('new_player', player))
+        sock.send(pickle.dumps(['init', [(p.id, p.coord) for p in players if p.id != addr]]))
+        # server_sender(('new_player', players[-1]))
         threading.Thread(target=client, args=(sock, addr, player)).start()
+    server_socket.close()
 
 
 
@@ -87,6 +124,8 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.coord = list(coord)
         self.id, self.socket = (), None  # Нужно для сервера
+        if is_host and len(players) == 0:
+            self.id = 1
 
         players.append(self)
         self.create_sprite(number, color)
@@ -98,7 +137,15 @@ class Player(pygame.sprite.Sprite):
         self.rect.center = (WIDTH / 2, HEIGHT / 2)
 
     def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
-        pass
+        self.rect.x = self.coord[0]
+        self.rect.y = self.coord[1]
+
+    def get_player(pl_id):
+        global players
+        for p in players:
+            if p.id == pl_id:
+                return p
+        return False
 
 
 class MyPlayer(Player):
@@ -111,6 +158,7 @@ class MyPlayer(Player):
             self.coord[0] += PLAYER_SPEED
         if left_flag and self.rect.left > 0:
             self.coord[0] -= PLAYER_SPEED
+        server_sender(('move', self.coord, self.id))
 
     def update(self):  # Действия для выполнения на каждый кадр, тут можно обновлять координаты
         self.rect.x = self.coord[0]
@@ -205,6 +253,7 @@ class Game:
         self.sprites.add(self.me)
 
     def game_loop(self):
+        global server_events
         running = True
         left_flag = False
         right_flag = False
@@ -214,6 +263,10 @@ class Game:
             self.sprites.update()
             self.screen.fill(WHITE)
             self.sprites.draw(self.screen)
+            # внеигровые события
+            for event_type, data in server_events:
+                if event_type == 'new_player':
+                    self.sprites.add(data)
             # ходьба
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
