@@ -6,13 +6,12 @@ import pickle
 from PIL import Image, ImageDraw
 from random import randint
 
-
 WIDTH = 750
 HEIGHT = 500
 FPS = 60
 
 PLAYER_SIZE = (50,) * 2
-ORD_SIZE = (50, ) * 2
+ORD_SIZE = (50,) * 2
 
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
@@ -59,7 +58,7 @@ def client(sock, addr, player):
             for p in players:
                 if p.socket is not None and p.socket != sock:
                     p.socket.send(data)
-            print('TO SERVER', event_type, changes)
+            # print('TO SERVER', event_type, changes)
         # else:
         #     print('TO CLIENT', event_type, changes, player_id)
 
@@ -101,16 +100,16 @@ def client_connect():
     client(sock, 0, players[0])
 
 
-def server_sender(data: tuple):
+def server_sender(*data):
     global server_socket, sock
     """Отправка событий на другие подключения или на сервер.
     В data должно быть event_type и changes"""
     if not is_host:
-        sock.send(pickle.dumps(data))
+        sock.send(pickle.dumps(*data))
     for p in players:
         if p.socket is None:
             continue
-        p.socket.send(pickle.dumps(data))
+        p.socket.send(pickle.dumps(*data))
 
 
 def server():
@@ -138,7 +137,6 @@ def server():
     server_socket.close()
 
 
-
 class Player(pygame.sprite.Sprite):
     def __init__(self, number, color, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
@@ -160,6 +158,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = self.coord[0]
         self.rect.y = self.coord[1]
 
+    @staticmethod
     def get_player(pl_id):
         global players
         for p in players:
@@ -193,6 +192,7 @@ def random_cords():
     x = randint(s_x, WIDTH - s_x)
     y = randint(s_y, HEIGHT - s_y)
     return x, y
+
 
 class Ore(pygame.sprite.Sprite):
     def __init__(self, kind, coord=(0, 0)):
