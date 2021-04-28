@@ -9,7 +9,7 @@ from random import randint
 
 WIDTH = 750
 HEIGHT = 500
-FPS = 30
+FPS = 60
 
 PLAYER_SIZE = (50,) * 2
 ORD_SIZE = (50, ) * 2
@@ -33,7 +33,7 @@ BACKGROUND_COLOR = (204, 51, 51)
 ORD_COLOR = {"diamond": BLUE, "gold": YELLOW}
 
 # Пока что все будет локально, ибо серверов у нас нет.
-addr = ('127.0.0.1', 9092)
+addr = ('127.0.0.1', 9093)
 is_host = False
 server_events = []
 players = []
@@ -55,19 +55,36 @@ def client(sock, addr, player):
             event_type, changes = pickle.loads(data)
             player_id = None
 
+        if is_host:
+            for p in players:
+                if p.socket is not None and p.socket != sock:
+                    p.socket.send(data)
+            print('TO SERVER', event_type, changes)
+        # else:
+        #     print('TO CLIENT', event_type, changes, player_id)
+
         if event_type == 'move':
             if is_host:
                 player.coord = changes
             else:
-                Player.get_player(player_id).coord = changes
-        elif event_type == 'new_player':
-            players.append(changes)
-        elif event_type == 'init':
+                try:
+                    Player.get_player(player_id).coord = changes
+                except AttributeError:
+                    pass
+        elif event_type == 'init_players':  # New player
             for id, coord in changes:
-                Player(len(players) + 1, 'red')
-                players[-1].id = id
-                players[-1].coord = coord
-                server_events.append(('new_player', players[-1]))
+                if coord == 'me':
+                    server_events.append(('init_id', id))
+                    print('aa', id)
+                else:
+                    Player(len(players) + 1, 'red')
+                    players[-1].id = id
+                    players[-1].coord = coord
+                    server_events.append(('new_player', players[-1]))
+            print(changes)
+        # elif event_type == 'init_id':
+        #     server_events.append(('init_id', changes))
+        #     print(changes)
     sock.close()
 
 
@@ -112,8 +129,11 @@ def server():
         player.socket = sock
         player.id = addr
         server_events.append(('new_player', player))
-        sock.send(pickle.dumps(['init', [(p.id, p.coord) for p in players if p.id != addr]]))
-        # server_sender(('new_player', players[-1]))
+        a = ['init_players', [(p.id, p.coord) for p in players if p.id != addr]]
+        a[1].append((addr, 'me'))
+        sock.send(pickle.dumps(a))
+        sock.send(pickle.dumps(['init_id', addr]))
+        server_sender(['init_players', [(player.id, player.coord)]])
         threading.Thread(target=client, args=(sock, addr, player)).start()
     server_socket.close()
 
@@ -267,6 +287,8 @@ class Game:
             for event_type, data in server_events:
                 if event_type == 'new_player':
                     self.sprites.add(data)
+                elif event_type == 'init_id':
+                    self.me.id = data
             # ходьба
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
