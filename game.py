@@ -259,6 +259,7 @@ class Game:
         pygame.display.set_caption("My Game")
         self.clock = pygame.time.Clock()
         self.sprites = pygame.sprite.Group()
+        self.ores = pygame.sprite.Group()
         self.init_circle()
         self.init_ore()
         self.game_loop()
@@ -266,7 +267,7 @@ class Game:
     def init_ore(self):
         ore = Ore("gold", random_cords())
         ores.append(ore)
-        self.sprites.add(ore)
+        self.ores.add(ore)
 
     def init_circle(self):
         self.me = MyPlayer(1, GREEN)
@@ -281,7 +282,9 @@ class Game:
         backward_flag = False
         while running:
             self.sprites.update()
+            self.ores.update()
             self.screen.fill(WHITE)
+            self.ores.draw(self.screen)
             self.sprites.draw(self.screen)
             # внеигровые события
             for event_type, data in server_events:
@@ -312,6 +315,10 @@ class Game:
                     if event.key == pygame.K_RIGHT:
                         right_flag = False
             self.me.move(forward_flag, backward_flag, right_flag, left_flag)
+            for ore in self.ores:
+                if ore.rect.left < self.me.coord[0] < ore.rect.right and \
+                        ore.rect.top < self.me.coord[1] < ore.rect.bottom:
+                    ore.mined()
             pygame.display.flip()
             self.clock.tick(FPS)
 
