@@ -168,6 +168,11 @@ class Player(pygame.sprite.Sprite):
 
 
 class MyPlayer(Player):
+    def __init__(self, number, color, coord=(0, 0)):
+        super().__init__(number, color, coord)
+        # инвентарь игрока. ключ это предмет, значение это его количество
+        self.inventory = {}
+
     def move(self, forward_flag, backward_flag, right_flag, left_flag):
         if forward_flag and self.rect.bottom < HEIGHT:
             self.coord[1] += PLAYER_SPEED
@@ -184,11 +189,14 @@ class MyPlayer(Player):
         self.rect.y = self.coord[1]
         # server_sender(('move', self.coord, self))
 
+    def get_resurses(self, count: int, kind: str):
+        self.inventory[kind] = self.inventory.get(kind, 0) + count
+
 
 def random_cords():
     # выдает случайные кординаты в пределах экрана
-    s_x = ORD_SIZE[0] // 2
-    s_y = ORD_SIZE[1] // 2
+    s_x = ORD_SIZE[0]
+    s_y = ORD_SIZE[1]
     x = randint(s_x, WIDTH - s_x)
     y = randint(s_y, HEIGHT - s_y)
     return x, y
@@ -198,6 +206,7 @@ class Ore(pygame.sprite.Sprite):
     def __init__(self, kind, coord=(0, 0)):
         pygame.sprite.Sprite.__init__(self)
         self.coord = list(coord)
+        self.kind = kind
         self.id, self.socket = (), None
         self.create_sprite(kind)
         self.rect.x = self.coord[0]
@@ -214,6 +223,7 @@ class Ore(pygame.sprite.Sprite):
         self.coord = list(random_cords())
         self.rect.x = self.coord[0]
         self.rect.y = self.coord[1]
+        return randint(1, 5), self.kind
 
     def update(self):
         pass
@@ -318,7 +328,8 @@ class Game:
             for ore in self.ores:
                 if ore.rect.left < self.me.coord[0] < ore.rect.right and \
                         ore.rect.top < self.me.coord[1] < ore.rect.bottom:
-                    ore.mined()
+                    count, resurs = ore.mined()
+                    self.me.get_resurses(count, resurs)
             pygame.display.flip()
             self.clock.tick(FPS)
 
