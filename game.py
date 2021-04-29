@@ -8,7 +8,7 @@ from random import randint
 
 WIDTH = 750
 HEIGHT = 500
-FPS = 60
+FPS = 30
 
 PLAYER_SIZE = (50,) * 2
 ORD_SIZE = (50,) * 2
@@ -32,7 +32,7 @@ BACKGROUND_COLOR = (204, 51, 51)
 ORD_COLOR = {"diamond": BLUE, "gold": YELLOW}
 
 # Пока что все будет локально, ибо серверов у нас нет.
-addr = ('127.0.0.1', 9093)
+addr = ('10.10.100.30', 9093)
 is_host = False
 server_events = []
 players = []
@@ -48,6 +48,8 @@ def client(sock, addr, player):
         if not data:
             break
         # data - (event_type: str, changes, player_id)
+
+
         try:
             event_type, changes, player_id = pickle.loads(data)
         except ValueError:
@@ -58,9 +60,6 @@ def client(sock, addr, player):
             for p in players:
                 if p.socket is not None and p.socket != sock:
                     p.socket.send(data)
-            # print('TO SERVER', event_type, changes)
-        # else:
-        #     print('TO CLIENT', event_type, changes, player_id)
 
         if event_type == 'move':
             if is_host:
@@ -81,9 +80,6 @@ def client(sock, addr, player):
                     players[-1].coord = coord
                     server_events.append(('new_player', players[-1]))
             print(changes)
-        # elif event_type == 'init_id':
-        #     server_events.append(('init_id', changes))
-        #     print(changes)
     sock.close()
 
 
@@ -101,40 +97,9 @@ def client_connect():
 
 
 def server_sender(*data):
-    global server_socket, sock
-    """Отправка событий на другие подключения или на сервер.
-    В data должно быть event_type и changes"""
-    if not is_host:
-        sock.send(pickle.dumps(*data))
-    for p in players:
-        if p.socket is None:
-            continue
-        p.socket.send(pickle.dumps(*data))
-
-
-def server():
-    global addr, server_socket, is_host, server_events
-    is_host = True
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(addr)
-    server_socket.listen(4)
-    print("server started at", addr)
-    while True:
-        sock, addr = server_socket.accept()
-        # Прием подключений к серверу
-        print("Accept connection from", addr)
-        player = Player(len(players), 'red')
-        player.socket = sock
-        player.id = addr
-        server_events.append(('new_player', player))
-        a = ['init_players', [(p.id, p.coord) for p in players if p.id != addr]]
-        a[1].append((addr, 'me'))
-        sock.send(pickle.dumps(a))
-        sock.send(pickle.dumps(['init_id', addr]))
-        server_sender(['init_players', [(player.id, player.coord)]])
-        threading.Thread(target=client, args=(sock, addr, player)).start()
-    server_socket.close()
+    global sock
+    print(*data)
+    sock.send(pickle.dumps(*data))
 
 
 class Player(pygame.sprite.Sprite):
@@ -189,7 +154,7 @@ class MyPlayer(Player):
         self.rect.y = self.coord[1]
         # server_sender(('move', self.coord, self))
 
-    def get_resurses(self, count: int, kind: str):
+    def get_resources(self, count: int, kind: str):
         self.inventory[kind] = self.inventory.get(kind, 0) + count
 
 

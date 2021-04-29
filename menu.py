@@ -43,7 +43,6 @@ class Menu:
         menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], default=self.difficulty - 1,
                           onchange=self.set_difficulty)
         menu.add.button('Play', self.start_game)
-        menu.add.button('Start server', self.start_server)
         menu.add.button('Connect to server', threading.Thread(target=game.client_connect).start)
         menu.add.button('Quit', pygame_menu.events.EXIT)
         menu.mainloop(surface)
