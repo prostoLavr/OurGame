@@ -4,6 +4,7 @@ import pickle
 import game
 
 players = []
+ores = []
 
 
 class PlayerClient:
@@ -13,6 +14,13 @@ class PlayerClient:
         self.socket = socket
 
         players.append(self)
+
+
+class Ore:
+    def __init__(self, coord=game.random_cords()):
+        self.coord = coord
+
+        ores.append(self)
 
 
 def client(sock, addr, player):
@@ -32,6 +40,9 @@ def client(sock, addr, player):
             event_type, changes = pickle.loads(data)
             player_id = None
 
+        if event_type != 'move':
+            print(event_type, changes)
+
         for p in players:
             if p.socket is not None and p.socket != sock:
                 p.socket.send(data)
@@ -41,6 +52,10 @@ def client(sock, addr, player):
         elif event_type == 'init_players':  # New player
             for id, coord in changes:
                 PlayerClient(id, coord=coord)
+        elif event_type == 'ore_mined':
+            ores.pop(0)
+            Ore()
+            server_sender(('init_ore', [i.coord for i in ores]))
     sock.close()
 
 
@@ -61,6 +76,7 @@ def server():
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_socket.bind(game.addr)
     server_socket.listen(4)
+    Ore()
     print("server started at", game.addr)
     while True:
         sock, addr = server_socket.accept()
@@ -70,6 +86,7 @@ def server():
         a = ['init_players', [(p.id, p.coord) for p in players if p.id != addr]]
         a[1].append((addr, 'me'))
         sock.send(pickle.dumps(a))
+        sock.send(pickle.dumps(['init_ore', [i.coord for i in ores]]))
         sock.send(pickle.dumps(['init_id', addr]))
         server_sender(['init_players', [(player.id, player.coord)]])
         threading.Thread(target=client, args=(sock, addr, player)).start()

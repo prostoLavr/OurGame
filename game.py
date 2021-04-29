@@ -32,7 +32,7 @@ BACKGROUND_COLOR = (204, 51, 51)
 ORD_COLOR = {"diamond": BLUE, "gold": YELLOW}
 
 # Пока что все будет локально, ибо серверов у нас нет.
-addr = ('10.10.100.30', 9093)
+addr = ('127.0.0.1', 9093)
 is_host = False
 server_events = []
 players = []
@@ -49,12 +49,14 @@ def client(sock, addr, player):
             break
         # data - (event_type: str, changes, player_id)
 
-
         try:
             event_type, changes, player_id = pickle.loads(data)
         except ValueError:
             event_type, changes = pickle.loads(data)
             player_id = None
+
+        if event_type != 'move':
+            print(event_type, changes)
 
         if is_host:
             for p in players:
@@ -69,11 +71,14 @@ def client(sock, addr, player):
                     Player.get_player(player_id).coord = changes
                 except AttributeError:
                     pass
+        elif event_type == 'init_ore':
+            for coord in changes:
+                server_events.append(('init_ore', coord))
         elif event_type == 'init_players':  # New player
             for id, coord in changes:
                 if coord == 'me':
                     server_events.append(('init_id', id))
-                    print('aa', id)
+                    print('my_id', id)
                 else:
                     Player(len(players) + 1, 'red')
                     players[-1].id = id
@@ -98,7 +103,6 @@ def client_connect():
 
 def server_sender(*data):
     global sock
-    print(*data)
     sock.send(pickle.dumps(*data))
 
 
@@ -185,9 +189,7 @@ class Ore(pygame.sprite.Sprite):
 
     def mined(self):
         # когда выкопали вызывается эта функция
-        self.coord = list(random_cords())
-        self.rect.x = self.coord[0]
-        self.rect.y = self.coord[1]
+        server_sender(('ore_mined', None))
         return randint(1, 5), self.kind
 
     def update(self):
@@ -236,11 +238,10 @@ class Game:
         self.sprites = pygame.sprite.Group()
         self.ores = pygame.sprite.Group()
         self.init_circle()
-        self.init_ore()
         self.game_loop()
 
-    def init_ore(self):
-        ore = Ore("gold", random_cords())
+    def init_ore(self, coord=random_cords()):
+        ore = Ore("gold", coord)
         ores.append(ore)
         self.ores.add(ore)
 
@@ -267,6 +268,8 @@ class Game:
                     self.sprites.add(data)
                 elif event_type == 'init_id':
                     self.me.id = data
+                elif event_type == 'init_ore':
+                    self.init_ore(data)
             # ходьба
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
