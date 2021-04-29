@@ -72,8 +72,8 @@ def client(sock, addr, player):
                 except AttributeError:
                     pass
         elif event_type == 'init_ore':
-            for coord in changes:
-                server_events.append(('init_ore', coord))
+            print('warning!:', changes)
+            server_events.append(('init_ore', changes))
         elif event_type == 'init_players':  # New player
             for id, coord in changes:
                 if coord == 'me':
@@ -189,7 +189,7 @@ class Ore(pygame.sprite.Sprite):
 
     def mined(self):
         # когда выкопали вызывается эта функция
-        server_sender(('ore_mined', None))
+        server_sender(('ore_mined', self.coord, self.kind))
         return randint(1, 5), self.kind
 
     def update(self):
@@ -241,6 +241,7 @@ class Game:
         self.game_loop()
 
     def init_ore(self, coord=random_cords()):
+        print('INIT OREEEE EEEEE')
         ore = Ore("gold", coord)
         ores.append(ore)
         self.ores.add(ore)
@@ -269,6 +270,7 @@ class Game:
                 elif event_type == 'init_id':
                     self.me.id = data
                 elif event_type == 'init_ore':
+                    print('init ore')
                     self.init_ore(data)
             # ходьба
             for event in pygame.event.get():
@@ -297,7 +299,7 @@ class Game:
                 if ore.rect.left < self.me.coord[0] < ore.rect.right and \
                         ore.rect.top < self.me.coord[1] < ore.rect.bottom:
                     count, resurs = ore.mined()
-                    self.me.get_resurses(count, resurs)
+                    self.me.get_resources(count, resurs)
             pygame.display.flip()
             self.clock.tick(FPS)
 

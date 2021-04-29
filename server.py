@@ -19,7 +19,6 @@ class PlayerClient:
 class Ore:
     def __init__(self, coord=game.random_cords()):
         self.coord = coord
-
         ores.append(self)
 
 
@@ -32,7 +31,7 @@ def client(sock, addr, player):
         if not data:
             break
         # data - (event_type: str, changes, player_id)
-        print(pickle.loads(data))
+        # print(pickle.loads(data))
 
         try:
             event_type, changes, player_id = pickle.loads(data)
@@ -86,7 +85,8 @@ def server():
         a = ['init_players', [(p.id, p.coord) for p in players if p.id != addr]]
         a[1].append((addr, 'me'))
         sock.send(pickle.dumps(a))
-        sock.send(pickle.dumps(['init_ore', [i.coord for i in ores]]))
+        print('warning!:', [i.coord for i in ores])
+        sock.send(pickle.dumps(['init_ore', tuple([i.coord for i in ores])]))
         sock.send(pickle.dumps(['init_id', addr]))
         server_sender(['init_players', [(player.id, player.coord)]])
         threading.Thread(target=client, args=(sock, addr, player)).start()
