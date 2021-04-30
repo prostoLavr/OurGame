@@ -1,3 +1,5 @@
+# coding: utf8
+
 import pygame
 import socket
 import threading
@@ -40,7 +42,7 @@ ores = []
 
 
 def client(sock, addr, player):
-    global players
+    global players, ores
     """Получение и обработка событий"""
     while True:
         data = sock.recv(1024)
@@ -72,13 +74,19 @@ def client(sock, addr, player):
                 except AttributeError:
                     pass
         elif event_type == 'init_ore':
-            print('warning!:', changes)
-            server_events.append(('init_ore', changes))
+            for o in ores:
+                o.kill()
+            ores = []
+            for ore_coord in changes:
+                server_events.append(('init_ore', ore_coord))
         elif event_type == 'init_players':  # New player
             for id, coord in changes:
                 if coord == 'me':
                     server_events.append(('init_id', id))
                     print('my_id', id)
+                elif coord == 'ores':
+                    for ore_coord in id:
+                        server_events.append(('init_ore', ore_coord))
                 else:
                     Player(len(players) + 1, 'red')
                     players[-1].id = id
@@ -190,6 +198,7 @@ class Ore(pygame.sprite.Sprite):
     def mined(self):
         # когда выкопали вызывается эта функция
         server_sender(('ore_mined', self.coord, self.kind))
+        # ores.remove(self)
         return randint(1, 5), self.kind
 
     def update(self):
@@ -241,10 +250,10 @@ class Game:
         self.game_loop()
 
     def init_ore(self, coord=random_cords()):
-        print('INIT OREEEE EEEEE')
         ore = Ore("gold", coord)
         ores.append(ore)
         self.ores.add(ore)
+        server_events.remove(('init_ore'))
 
     def init_circle(self):
         self.me = MyPlayer(1, GREEN)
@@ -267,11 +276,15 @@ class Game:
             for event_type, data in server_events:
                 if event_type == 'new_player':
                     self.sprites.add(data)
+                    server_events.remove(('new_player', data))
                 elif event_type == 'init_id':
                     self.me.id = data
+                    server_events.remove(('init_id', data))
                 elif event_type == 'init_ore':
-                    print('init ore')
                     self.init_ore(data)
+                # server_events.remove((event_type, data))
+                # elif event_type == 'del_ore':
+                #     ores[0].kill()
             # ходьба
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -300,6 +313,7 @@ class Game:
                         ore.rect.top < self.me.coord[1] < ore.rect.bottom:
                     count, resurs = ore.mined()
                     self.me.get_resources(count, resurs)
+                    ore.kill()
             pygame.display.flip()
             self.clock.tick(FPS)
 

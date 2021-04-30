@@ -1,7 +1,10 @@
+# coding: utf8
+
 import socket
 import threading
 import pickle
 import game
+import time
 
 players = []
 ores = []
@@ -9,6 +12,7 @@ ores = []
 
 class PlayerClient:
     def __init__(self, id=0, socket=None, coord=(0, 0)):
+        global players
         self.coord = coord
         self.id = id
         self.socket = socket
@@ -17,7 +21,7 @@ class PlayerClient:
 
 
 class Ore:
-    def __init__(self, coord=game.random_cords()):
+    def __init__(self, coord=(0, 0)):
         self.coord = coord
         ores.append(self)
 
@@ -41,10 +45,10 @@ def client(sock, addr, player):
 
         if event_type != 'move':
             print(event_type, changes)
-
-        for p in players:
-            if p.socket is not None and p.socket != sock:
-                p.socket.send(data)
+        else:
+            for p in players:
+                if p.socket is not None and p.socket != sock:
+                    p.socket.send(data)
 
         if event_type == 'move':
             player.coord = changes
@@ -53,8 +57,8 @@ def client(sock, addr, player):
                 PlayerClient(id, coord=coord)
         elif event_type == 'ore_mined':
             ores.pop(0)
-            Ore()
-            server_sender(('init_ore', [i.coord for i in ores]))
+            Ore(game.random_cords())
+            server_sender(['init_ore', [i.coord for i in ores]])
     sock.close()
 
 
@@ -63,8 +67,7 @@ def server_sender(*data):
     """Отправка событий на другие подключения или на сервер.
     В data должно быть event_type и changes"""
     for p in players:
-        if p.socket is None:
-            continue
+        print(p.id)
         p.socket.send(pickle.dumps(*data))
 
 
@@ -84,9 +87,9 @@ def server():
         player = PlayerClient(addr, sock)
         a = ['init_players', [(p.id, p.coord) for p in players if p.id != addr]]
         a[1].append((addr, 'me'))
+        a[1].append(([i.coord for i in ores], 'ores'))
         sock.send(pickle.dumps(a))
-        print('warning!:', [i.coord for i in ores])
-        sock.send(pickle.dumps(['init_ore', tuple([i.coord for i in ores])]))
+        # sock.send(pickle.dumps(['init_ore', [i.coord for i in ores]]))
         sock.send(pickle.dumps(['init_id', addr]))
         server_sender(['init_players', [(player.id, player.coord)]])
         threading.Thread(target=client, args=(sock, addr, player)).start()
